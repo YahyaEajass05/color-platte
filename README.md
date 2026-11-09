@@ -2,7 +2,7 @@
 
 A single Next.js App Router page with seven healthcare colour palettes: the three supplied directions plus clear blue, deep indigo, aqua, and warm stone. Includes HEX/RGB switching, clipboard controls, semantic status colours and downloadable CSS custom properties. No dashboard or extra pages.
 
-Each palette swatch has a native colour picker and editable six-digit HEX field. Supported browsers on HTTPS or localhost also show a screen eyedropper; Escape cancels sampling. Edits update the palette preview, RGB values, live CSS code, clipboard output, and downloaded CSS tokens. Changes are kept while switching palettes during the current page session; refreshing restores the defaults. Reset palette restores only the selected palette. Invalid HEX input leaves the last valid colour unchanged; Escape restores its current code.
+Each palette swatch opens a paint-style colour studio: a square saturation/brightness mixer, rainbow hue slider, 32 preset choices, editable HEX and RGB fields, original-colour restore, and live colour preview. Drag within the square or use arrow keys (Shift for larger steps); Escape or Done closes the studio. The inline six-digit HEX editor is also available. Supported browsers on HTTPS or localhost also show a screen eyedropper; Escape cancels sampling. Edits update the palette preview, RGB values, live CSS code, clipboard output, and downloaded CSS tokens. Changes are kept while switching palettes during the current page session; refreshing restores the defaults. Reset palette restores only the selected palette. Invalid HEX input leaves the last valid colour unchanged; Escape restores its current code.
 
 ## Run
 

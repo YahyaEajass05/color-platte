@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { PaintPicker } from './paint-picker';
 
 type Colour = { name: string; hex: string; use: string };
 type EyeDropperConstructor = new () => {
@@ -71,7 +72,7 @@ export function ColourSwatch({ colour, index, value, foreground, onCopy, onChang
       <div className="swatch-info"><h3>{colour.name}</h3><p>{colour.use}</p></div>
     </button>
     <div className="colour-editor">
-      <input className="colour-picker" type="color" value={colour.hex} onChange={event => onChange(event.target.value.toUpperCase())} aria-label={`Choose ${colour.name}`} title={`Choose ${colour.name}`} />
+      <PaintPicker hex={colour.hex} name={colour.name} onChange={onChange} />
       <input className="hex-editor" type="text" value={draft} spellCheck={false} autoComplete="off" maxLength={7} aria-label={`HEX code for ${colour.name}`} aria-invalid={error} aria-describedby={error ? errorId : undefined} onChange={event => updateDraft(event.target.value)} onKeyDown={event => {
         if (event.key === 'Escape') { setDraft(colour.hex); setError(false); event.currentTarget.blur(); }
         if (event.key === 'Enter' && !error) event.currentTarget.blur();
