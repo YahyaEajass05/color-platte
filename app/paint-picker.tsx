@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useId, useRef, useState, type PointerEvent } from 'react';
 import { clamp, hexToHsv, hexToRgb, hsvToHex, rgbToHex, type HSV } from './colour-math';
 
 const presets = [
@@ -10,7 +10,7 @@ const presets = [
   '#FECACA', '#FED7AA', '#FEF08A', '#DCFCE7', '#CCFBF1', '#CFFAFE', '#DBEAFE', '#E0E7FF',
 ];
 
-export function PaintPicker({ hex, name, onChange }: { hex: string; name: string; onChange: (hex: string) => void }) {
+export function PaintPicker({ hex, name, onChange, inline = false }: { hex: string; name: string; onChange: (hex: string) => void; inline?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const square = useRef<HTMLDivElement>(null);
   const current = useRef<HSV>(hexToHsv(hex));
@@ -20,6 +20,15 @@ export function PaintPicker({ hex, name, onChange }: { hex: string; name: string
   const [original, setOriginal] = useState(hex);
   const id = useId();
   const rgb = hexToRgb(hex);
+  const emitted = useRef(hex);
+
+  useEffect(() => {
+    if (hex !== emitted.current) {
+      current.current = hexToHsv(hex);
+      setHsv(current.current); setDraft(hex); setInvalid(false);
+      emitted.current = hex;
+    }
+  }, [hex]);
 
   function open() {
     current.current = hexToHsv(hex);
@@ -28,6 +37,7 @@ export function PaintPicker({ hex, name, onChange }: { hex: string; name: string
   }
 
   function choose(next: string) {
+    emitted.current = next;
     current.current = hexToHsv(next);
     setHsv(current.current); setDraft(next); setInvalid(false); onChange(next);
   }
@@ -35,6 +45,7 @@ export function PaintPicker({ hex, name, onChange }: { hex: string; name: string
   function changeHsv(next: HSV) {
     current.current = next;
     const value = hsvToHex(next);
+    emitted.current = value;
     setHsv(next); setDraft(value); setInvalid(false); onChange(value);
   }
 
@@ -43,13 +54,9 @@ export function PaintPicker({ hex, name, onChange }: { hex: string; name: string
     changeHsv({ ...current.current, s: clamp((event.clientX - rect.left) / rect.width * 100), v: clamp(100 - (event.clientY - rect.top) / rect.height * 100) });
   }
 
-  return <>
-    <button className="colour-picker paint-trigger" onClick={open} aria-label={`Open paint colour picker for ${name}`} aria-haspopup="dialog" title="Open colour mixer">
-      <span style={{ background: hex }} />
-    </button>
-    <dialog className="paint-dialog" ref={dialog} aria-labelledby={`${id}-title`} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
+  const content = (
       <div className="paint-inner">
-        <div className="paint-heading"><div><span>COLOUR STUDIO</span><h2 id={`${id}-title`}>{name}</h2></div><button autoFocus className="paint-close" onClick={() => dialog.current?.close()} aria-label="Close colour picker">×</button></div>
+        <div className="paint-heading"><div><span>COLOUR STUDIO</span><h2 id={`${id}-title`}>{name}</h2></div>{!inline && <button autoFocus className="paint-close" onClick={() => dialog.current?.close()} aria-label="Close colour picker">×</button>}</div>
         <div ref={square} className="paint-square" tabIndex={0} role="group" aria-label="Saturation and brightness. Left and right change saturation; up and down change brightness. Hold Shift for larger steps." aria-describedby={`${id}-values`} style={{ backgroundColor: `hsl(${hsv.h} 100% 50%)` }} onPointerDown={event => { if (event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); event.currentTarget.focus(); sample(event); }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) sample(event); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
           event.preventDefault(); const step = event.shiftKey ? 10 : 1;
@@ -63,11 +70,17 @@ export function PaintPicker({ hex, name, onChange }: { hex: string; name: string
           if (valid) choose(normalized);
         }} /></label>{(['R', 'G', 'B'] as const).map((channel, i) => <label key={channel}>{channel}<input type="number" min="0" max="255" value={rgb[i]} onFocus={event => event.currentTarget.select()} onChange={event => { const next = [...rgb]; next[i] = clamp(Number(event.target.value), 0, 255); choose(rgbToHex(next)); }} /></label>)}</div>
         {invalid && <p className="paint-error" id={`${id}-error`}>Enter six HEX digits, for example #0B6B6D.</p>}
-        <div className="paint-presets-heading"><h3>Colour choices</h3><span>32 presets</span></div>
-        <div className="paint-presets">{presets.map(preset => <button key={preset} aria-label={`Choose ${preset}`} aria-pressed={hex === preset} title={preset} style={{ background: preset }} onClick={() => choose(preset)}>{hex === preset && <span aria-hidden="true" className="preset-check" />}</button>)}</div>
-        <div className="paint-footer"><button className="paint-original" onClick={() => choose(original)} title="Restore the colour from when this picker opened"><span style={{ background: original }} /> Original</button><div className="paint-current"><span style={{ background: hex }} /><code>{hex}</code></div><button className="paint-done" onClick={() => dialog.current?.close()}>Done</button></div>
-        <p className="paint-note">Colours and CSS update live. Esc closes the picker.</p>
+        {!inline && <><div className="paint-presets-heading"><h3>Colour choices</h3><span>32 presets</span></div>
+        <div className="paint-presets">{presets.map(preset => <button key={preset} aria-label={`Choose ${preset}`} aria-pressed={hex === preset} title={preset} style={{ background: preset }} onClick={() => choose(preset)}>{hex === preset && <span aria-hidden="true" className="preset-check" />}</button>)}</div></>}
+        {!inline && <><div className="paint-footer"><button className="paint-original" onClick={() => choose(original)} title="Restore the colour from when this picker opened"><span style={{ background: original }} /> Original</button><div className="paint-current"><span style={{ background: hex }} /><code>{hex}</code></div><button className="paint-done" onClick={() => dialog.current?.close()}>Done</button></div>
+        <p className="paint-note">Colours and CSS update live. Esc closes the picker.</p></>}
       </div>
+  );
+  if (inline) return <div className="paint-inline">{content}</div>;
+  return <>
+    <button className="colour-picker paint-trigger" onClick={open} aria-label={`Open paint colour picker for ${name}`} aria-haspopup="dialog" title="Open colour mixer"><span style={{ background: hex }} /></button>
+    <dialog className="paint-dialog" ref={dialog} aria-labelledby={`${id}-title`} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
+      {content}
     </dialog>
   </>;
 }
